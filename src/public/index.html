@@ -1,8 +1,8 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <link rel="stylesheet" href="./style/main.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    <link rel="stylesheet" href="./style/main.css">
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script src="https://code.highcharts.com/stock/highstock.js"></script>
     <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
@@ -19,10 +19,8 @@
     <div class = "row">
       <div class="col-md-12 stocks-container">
           <div class="col-md-4 col-sm-6 stock-block">
-            <h3>
-              FB
-              <button type="button" class="close" onClick="removeStock()">X</button>
-            </h3>
+            <h3>FB<button type="button" class="close" onClick="removeStock(event)">X</button></h3>
+            
             <span class="name">Facebook Inc. (FB) Prices, Divedends, Splits and Trading Volume</span>
           </div>
           <div class="col-md-4 col-sm-6 stock-block stock-new">
@@ -66,8 +64,12 @@ function addStock(){
   var value = document.getElementById('stockInput').value
   socket.emit(ADD_STOCK, value.toString())
 }
-function removeStock(){
- socket.emit(REMOVE_STOCK, 'AAPL Stock removed')
+function removeStock(e){
+  var h3 = e.target.parentElement
+  var text = $(h3).contents().get(0).nodeValue.split('').map(x => x.trim()).join('')
+  console.log(text)
+  socket.emit(REMOVE_STOCK, text)
+
 }
 function updateStocks(newStock = 'AAPL'){
   stocks = newStock

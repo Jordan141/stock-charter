@@ -31,6 +31,11 @@ function validateSymbol(symbol){
     return cts.valid(symbol)
 }
 
+function notifyUsers(socket, tag, data){
+    socket.emit(tag, data)
+    socket.broadcast.emit(tag, data)
+}
+
 io.on('connection', socket => {
     socket.on('join', function(data) {
         console.log('Join:', data);
@@ -40,7 +45,7 @@ io.on('connection', socket => {
         console.log(ADD_STOCK, data)
         if(validateSymbol(data)){
             stocks.push(data)
-            socket.broadcast.emit(NEW_STOCK, stocks)
+            notifyUsers(socket, NEW_STOCK, data)
         } else {
             socket.emit(INVALID_STOCK, data)
         }
@@ -48,9 +53,11 @@ io.on('connection', socket => {
     socket.on(REMOVE_STOCK, function(data){
         console.log(REMOVE_STOCK, data)
         if(validateSymbol(data) && stocks.includes(data)){
+            console.log(REMOVE_STOCK, 'Accepted', data)
             stocks.splice(stocks.indexOf(data), 1)
-            socket.broadcast.emit(NEW_STOCK, stocks)
+            notifyUsers(socket, NEW_STOCK, data)
         } else {
+            console.log(INVALID_STOCK, data)
             socket.emit(INVALID_STOCK, data)
         }
     })
