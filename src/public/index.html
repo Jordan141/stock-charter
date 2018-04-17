@@ -2,6 +2,7 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <link rel="stylesheet" href="./style/main.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script src="https://code.highcharts.com/stock/highstock.js"></script>
     <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
@@ -9,13 +10,37 @@
     <title>Stock Charter</title>
 </head>
 <body>
-    <div id="container" style="width:100%; height:400px;"></div>
-    <button id="addStock" onClick="addStock()">Add Stock</button>
-    <button id="removeStock" onClick="removeStock()">Remove Stock</button>
+  <section class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <div id="container" style="width:100%; height:400px;"></div>
+      </div>
+    </div>
+    <div class = "row">
+      <div class="col-md-12 stocks-container">
+          <div class="col-md-4 col-sm-6 stock-block">
+            <h3>
+              FB
+              <button type="button" class="close" onClick="removeStock()">X</button>
+            </h3>
+            <span class="name">Facebook Inc. (FB) Prices, Divedends, Splits and Trading Volume</span>
+          </div>
+          <div class="col-md-4 col-sm-6 stock-block stock-new">
+            <label>Syncs in realtime across  clients</label>
+            <div class="input-group">
+              <input class="form-control" id="stockInput" placeholder="Stock code">
+              <span class="input-group-btn">
+                  <button class="btn btn-success" type="submit" onClick="addStock()">Add</button>
+              </span>
+            </div>
+          </div>
+      </div>
+    </div>
+  </section>
 </body>
 </html>
 <script>
-var ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK ='new_stock'
+var ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK ='new_stock', INVALID_STOCK = 'invalid_stock'
 var seriesOptions = [], seriesCounter = 0;
 var stocks = [];
 var socket = io();
@@ -32,10 +57,14 @@ socket.on('connect', function(data) {
     console.log(NEW_STOCK, data)
     updateStocks(data)
   })
+  socket.on(INVALID_STOCK, function(data){
+    alert(data);
+  })
 });
 
 function addStock(){
-  socket.emit(ADD_STOCK, 'AAPL Stock added')
+  var value = document.getElementById('stockInput').value
+  socket.emit(ADD_STOCK, value.toString())
 }
 function removeStock(){
  socket.emit(REMOVE_STOCK, 'AAPL Stock removed')
@@ -44,9 +73,10 @@ function updateStocks(newStock = 'AAPL'){
   stocks = newStock
   $.each(stocks, (i, name) => {
     $.post('/', {id: name.toLowerCase()}, data => {
+      console.log('POST:', data)
       var newData = [];
       data = data.dataset_data
-      console.log('POST:', data)
+      
       data.data.forEach(point => {
         newData.push([new Date(point[0]).getTime(), point[1]]);
       })
@@ -54,7 +84,7 @@ function updateStocks(newStock = 'AAPL'){
       newData.reverse();
 
       seriesOptions[i] = {
-        name: data.code,
+        name: name,
         data: newData
       };
       //Async counter, render when complete
@@ -94,4 +124,6 @@ function createChart() {
     series: seriesOptions
   });
 }
+
 </script>
+<script src="./js/dark.js"></script>
