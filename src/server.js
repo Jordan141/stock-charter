@@ -44,9 +44,11 @@ io.on('connection', socket => {
     socket.on(ADD_STOCK, function(data){
         console.log(ADD_STOCK, data)
         if(validateSymbol(data)){
+            console.log(ADD_STOCK, 'Accepted', data)
             stocks.push(data)
-            notifyUsers(socket, NEW_STOCK, data)
+            notifyUsers(socket, NEW_STOCK, stocks)
         } else {
+            console.log(INVALID_STOCK, data)
             socket.emit(INVALID_STOCK, data)
         }
     })
