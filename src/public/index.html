@@ -5,75 +5,93 @@
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script src="https://code.highcharts.com/stock/highstock.js"></script>
     <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js"></script>
     <title>Stock Charter</title>
 </head>
 <body>
     <div id="container" style="width:100%; height:400px;"></div>
+    <button id="addStock" onClick="addStock()">Add Stock</button>
+    <button id="removeStock" onClick="removeStock()">Remove Stock</button>
 </body>
 </html>
 <script>
-var seriesOptions = [],
-  seriesCounter = 0,
-  names = ['MSFT', 'AAPL', 'GOOG'];
+var ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK ='new_stock'
+var seriesOptions = [], seriesCounter = 0;
+var stocks = '';
+var socket = io();
 
-function createChart() {
-
-Highcharts.stockChart('container', {
-  rangeSelector: {
-    selected: 4
-  },
-  yAxis: {
-    labels: {
-      formatter: function() {
-        return (this.value > 0 ? ' + ' : '') + this.value + '%';
-      }
-    },
-    plotLines: [{
-      value: 0,
-      width: 2,
-      color: 'silver'
-    }]
-  },
-  plotOptions: {
-    series: {
-      compare: 'percent',
-      showInNavigator: true,
-      // turboThreshold: 0
-    }
-  },
-  tooltip: {
-    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
-    valueDecimals: 2,
-    split: true
-  },
-  series: seriesOptions
+socket.on('connect', function(data) {
+  socket.emit('join', 'A user has connected');
+  socket.on(ADD_STOCK, function(data) {
+    console.log(ADD_STOCK, data);
+  });
+  socket.on(REMOVE_STOCK, function(data){
+    console.log(REMOVE_STOCK, data)
+  });
+  socket.on(NEW_STOCK, function(data){
+    console.log(NEW_STOCK, data)
+    updateStocks(data)
+  })
 });
+
+function addStock(){
+  socket.emit(ADD_STOCK, 'AAPL Stock added')
+}
+function removeStock(){
+ socket.emit(REMOVE_STOCK, 'AAPL Stock removed')
+}
+function updateStocks(newStock = 'AAPL'){
+  stocks = newStock
+  $.each(stocks, (i, name) => {
+    $.post('/', {id: name.toLowerCase()}, data => {
+      var newData = [];
+      data = data.dataset_data
+      console.log('POST:', data)
+      data.data.forEach(point => {
+        newData.push([new Date(point[0]).getTime(), point[1]]);
+      })
+
+      newData.reverse();
+
+      seriesOptions[i] = {
+        name: data.code,
+        data: newData
+      };
+      //Async counter, render when complete
+      seriesCounter += 1;
+
+      if (seriesCounter === stocks.length) {
+        createChart();
+      }
+    });
+  });
 }
 
-$.each(names, function(i, name) {
-
-$.post('/', {id: name.toLowerCase()}, function(data) {
-  var newData = [];
-  data = data.dataset_data
-    console.log(data)
-  data.data.forEach(function(point) {
-    newData.push([new Date(point[0]).getTime(), point[1]]);
+function createChart() {
+  Highcharts.stockChart('container', {
+    rangeSelector: {
+      selected: 4
+    },
+    yAxis: {
+      labels: { formatter: () => (this.value > 0 ? ' + ' : '') + this.value + '%' },
+      plotLines: [{
+        value: 0,
+        width: 2,
+        color: 'silver'
+      }]
+    },
+    plotOptions: {
+      series: {
+        compare: 'percent',
+        showInNavigator: true
+      }
+    },
+    tooltip: {
+      pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
+      valueDecimals: 2,
+      split: true
+    },
+    series: seriesOptions
   });
-
-  newData.reverse();
-
-  seriesOptions[i] = {
-    name: data.code,
-    data: newData
-  };
-
-  // As we're loading the data asynchronously, we don't know what order it will arrive. So
-  // we keep a counter and create the chart when all the data is loaded.
-  seriesCounter += 1;
-
-  if (seriesCounter === names.length) {
-    createChart();
-  }
-});
-});
+}
 </script>
