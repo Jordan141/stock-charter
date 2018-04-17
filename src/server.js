@@ -29,15 +29,15 @@ app.post('/', (req, res) => {
 
 io.on('connection', socket => {
     socket.on('join', function(data) {
-        console.log(data);
+        console.log('Join:', data);
         socket.emit(NEW_STOCK, stocks);
     });
     socket.on(ADD_STOCK, function(data){
-        console.log(data)
+        console.log(ADD_STOCK, data)
         socket.broadcast.emit(NEW_STOCK, stocks)
     })
     socket.on(REMOVE_STOCK, function(data){
-        console.log(data)
+        console.log(REMOVE_STOCK, data)
         socket.broadcast.emit(NEW_STOCK, stocks)
     })
 })
