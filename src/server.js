@@ -20,15 +20,31 @@ app.get('/', (req, res) => {
     res.send('/')
 })
 
+// app.post('/metadata', (req, res) => {
+//     const id = req.body.name
+//     fetch(`https://www.quandl.com/api/v3/datasets/WIKI/${id}/metadata.json?api_key=${API_KEY}`)
+//     .then(response => response.json())
+//     .then(data => res.send(errorCatch(data)))
+//     .catch(err => res.send(err))
+// })
+
 app.post('/', (req, res) => {
     const id = req.body.id
-    fetch(`https://www.quandl.com/api/v3/datasets/WIKI/${id}/data.json?api_key=${API_KEY}`).then(response =>response.json())
-    .then(data => res.send(data))
-    .catch(err => res.send(err))
-
+    fetch(`https://www.quandl.com/api/v3/datasets/WIKI/${id}/data.json?api_key=${API_KEY}`)
+    .then(response => response.json())
+    .then(data => res.send(errorCatch(data)))
+    .catch(err => console.log(err))
 })
 function validateSymbol(symbol){
     return cts.valid(symbol)
+}
+
+function errorCatch(data){
+    if(data.hasOwnProperty('quandl_error')){
+        return INVALID_STOCK
+    }
+
+    return data
 }
 
 function notifyUsers(socket, tag, data){

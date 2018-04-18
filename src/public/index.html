@@ -18,11 +18,11 @@
     </div>
     <div class = "row">
       <div class="col-md-12 stocks-container">
-          <div class="col-md-4 col-sm-6 stock-block">
-              <h3>FB<button type="button" class="close" onClick="removeStock(event)">X</button></h3>
+<!--          <div class="col-md-4 col-sm-6 stock-block">
+            <h3>FB<button type="button" class="close" onClick="removeStock(event)">X</button></h3>
               
-              <span class="name">Facebook Inc. (FB) Prices, Divedends, Splits and Trading Volume</span>
-            </div>
+            <span class="name">Facebook Inc. (FB) Prices, Divedends, Splits and Trading Volume</span>
+          </div> -->
           <div class="col-md-4 col-sm-6 stock-block stock-new">
             <label>Syncs in realtime across  clients</label>
             <div class="input-group">
@@ -40,7 +40,7 @@
 <script>
 var ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK ='new_stock', INVALID_STOCK = 'invalid_stock'
 var seriesOptions = [], seriesCounter = 0;
-var stocks = [];
+var stocks = [], myCards = [];
 var socket = io();
 
 socket.on('connect', function(data) {
@@ -56,9 +56,16 @@ socket.on('connect', function(data) {
     updateStocks(data)
   })
   socket.on(INVALID_STOCK, function(data){
-    alert(data);
+    console.log(INVALID_STOCK, data);
   })
 });
+
+function createStockElement(title, data){
+  return `<div class="col-md-4 col-sm-6 stock-block">
+            <h3>${title}<button type="button" class="close" onClick="removeStock(event)">X</button></h3>
+            <span class="name">${data}</span>
+          </div>`
+}
 
 function addStock(){
   var value = document.getElementById('stockInput').value
@@ -68,33 +75,43 @@ function removeStock(e){
   var h3 = e.target.parentElement
   var text = $(h3).contents().get(0).nodeValue.split('').map(x => x.trim()).join('')
   console.log(text)
+  $(h3.parentElement).remove()
   socket.emit(REMOVE_STOCK, text)
-
 }
-function updateStocks(newStock = 'AAPL'){
-  stocks = newStock
+
+function updateStocks(newStock = []){
+  stocks = newStock 
+  console.log("Stocks:", stocks)
   $.each(stocks, (i, name) => {
-    $.post('/', {id: name.toLowerCase()}, data => {
-      console.log('POST:', data)
-      var newData = [];
-      data = data.dataset_data
+      console.log('each', name)
+    $.post('/', {id: name}, data => {
+      console.log('POST:', data || 'No data')
+        // if(data === INVALID_STOCK){
+        //   return alert('Invalid stockname')
+        // }
+        var newData = [];
+        data = data.dataset_data
       
-      data.data.forEach(point => {
-        newData.push([new Date(point[0]).getTime(), point[1]]);
-      })
+        data.data.forEach(point => {
+          newData.push([new Date(point[0]).getTime(), point[1]]);
+        })
 
-      newData.reverse();
+        newData.reverse();
 
-      seriesOptions[i] = {
-        name: name,
-        data: newData
-      };
-      //Async counter, render when complete
-      seriesCounter += 1;
+        seriesOptions[i] = {
+          name: name,
+          data: newData
+        };
+        //Async counter, render when complete
+        seriesCounter += 1;
 
-      if (seriesCounter === stocks.length) {
-        createChart();
-      }
+        if (seriesCounter === stocks.length) {
+          createChart();
+          myCards.forEach(e => $(e).remove())
+          myCards = stocks.map(e => createStockElement(e))
+          myCards.forEach(e => $('.stocks-container').append(e))
+          console.log(myCards)
+        }
     });
   });
 }
