@@ -3,7 +3,6 @@ const PORT = process.env.PORT || 8080
 const API_KEY = process.env.API_KEY || require('./config.json').API_KEY
 const fetch = require('node-fetch')
 const bodyParser = require('body-parser')
-const cts = require('check-ticker-symbol')
 const app = express()
 const server = require('http').createServer(app)
 const io = require('socket.io').listen(server)
@@ -20,24 +19,17 @@ app.get('/', (req, res) => {
     res.send('/')
 })
 
-// app.post('/metadata', (req, res) => {
-//     const id = req.body.name
-//     fetch(`https://www.quandl.com/api/v3/datasets/WIKI/${id}/metadata.json?api_key=${API_KEY}`)
-//     .then(response => response.json())
-//     .then(data => res.send(errorCatch(data)))
-//     .catch(err => res.send(err))
-// })
-
 app.post('/', (req, res) => {
     const id = req.body.id
-    fetch(`https://www.quandl.com/api/v3/datasets/WIKI/${id}/data.json?api_key=${API_KEY}`)
-    .then(response => response.json())
-    .then(data => res.send(errorCatch(data)))
-    .catch(err => console.log(err))
+    const urls = [`https://www.quandl.com/api/v3/datasets/WIKI/${id}/data.json?api_key=${API_KEY}`,
+    `https://www.quandl.com/api/v3/datasets/WIKI/${id}/metadata.json?api_key=${API_KEY}`
+    ]
+
+    const promises = urls.map(url => fetch(url).then(y => y.json()))
+    Promise.all(promises).then(results => {
+        res.send(results)
+    });
 })
-function validateSymbol(symbol){
-    return cts.valid(symbol)
-}
 
 function errorCatch(data){
     if(data.hasOwnProperty('quandl_error')){

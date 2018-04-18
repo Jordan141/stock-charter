@@ -18,15 +18,13 @@
     </div>
     <div class = "row">
       <div class="col-md-12 stocks-container">
-<!--          <div class="col-md-4 col-sm-6 stock-block">
-            <h3>FB<button type="button" class="close" onClick="removeStock(event)">X</button></h3>
-              
-            <span class="name">Facebook Inc. (FB) Prices, Divedends, Splits and Trading Volume</span>
-          </div> -->
           <div class="col-md-4 col-sm-6 stock-block stock-new">
             <label>Syncs in realtime across  clients</label>
             <div class="input-group">
-              <input class="form-control" id="stockInput" placeholder="Stock code">
+              <input class="form-control" id="stockInput" list="symbolList" placeholder="Stock code">
+              <datalist id="symbolList">
+
+              </datalist>
               <span class="input-group-btn">
                   <button class="btn btn-success" type="submit" onClick="addStock()">Add</button>
               </span>
@@ -45,12 +43,6 @@ var socket = io();
 
 socket.on('connect', function(data) {
   socket.emit('join', 'A user has connected');
-  socket.on(ADD_STOCK, function(data) {
-    console.log(ADD_STOCK, data);
-  });
-  socket.on(REMOVE_STOCK, function(data){
-    console.log(REMOVE_STOCK, data)
-  });
   socket.on(NEW_STOCK, function(data){
     console.log(NEW_STOCK, data)
     updateStocks(data)
@@ -74,7 +66,7 @@ function addStock(){
 function removeStock(e){
   var h3 = e.target.parentElement
   var text = $(h3).contents().get(0).nodeValue.split('').map(x => x.trim()).join('')
-  console.log(text)
+
   $(h3.parentElement).remove()
   socket.emit(REMOVE_STOCK, text)
 }
@@ -83,35 +75,36 @@ function updateStocks(newStock = []){
   stocks = newStock 
   console.log("Stocks:", stocks)
   $.each(stocks, (i, name) => {
-      console.log('each', name)
-    $.post('/', {id: name}, data => {
-      console.log('POST:', data || 'No data')
-        // if(data === INVALID_STOCK){
-        //   return alert('Invalid stockname')
-        // }
-        var newData = [];
-        data = data.dataset_data
-      
-        data.data.forEach(point => {
-          newData.push([new Date(point[0]).getTime(), point[1]]);
-        })
+    $.post('/', {id: name}, respData => {
+      console.log('POST:', respData || 'No data')
+      if(respData === INVALID_STOCK){
+        return console.log('Quandl Error', 'Invalid stockname')
+      }
+      var newData = [], info;
+      data = respData[0].dataset_data
+      console.log('data', data)
+      info = respData[1].dataset
+      console.log('info', info)
+      data.data.forEach(point => {
+        newData.push([new Date(point[0]).getTime(), point[1]]);
+      })
 
-        newData.reverse();
+      newData.reverse();
 
-        seriesOptions[i] = {
-          name: name,
-          data: newData
-        };
-        //Async counter, render when complete
-        seriesCounter += 1;
+      seriesOptions[i] = {
+        name: name,
+        data: newData
+      };
+      //Async counter, render when complete
+      seriesCounter += 1;
 
-        if (seriesCounter === stocks.length) {
-          createChart();
-          myCards.forEach(e => $(e).remove())
-          myCards = stocks.map(e => createStockElement(e))
-          myCards.forEach(e => $('.stocks-container').append(e))
-          console.log(myCards)
-        }
+      if (seriesCounter === stocks.length) {
+        createChart();
+        myCards.forEach(e => $(e).remove())
+        myCards = stocks.map(e => createStockElement(e, info.name))
+        myCards.forEach(e => $('.stocks-container').append(e))
+        console.log(myCards)
+      }
     });
   });
 }
@@ -144,5 +137,18 @@ function createChart() {
   });
 }
 
+window.onload = () => {
+  $.getJSON('./js/companylist.json', data => {
+    console.log('json success')
+    console.log('JSONDATA', data)
+    var dataList = $("#symbolList");
+    $.each(data, (i, x) => {
+      var symbol = x.Symbol
+      var opt = $("<option></option>").attr("value", symbol);
+      if(i % 100 === 0) console.log(symbol)
+      dataList.append(opt)
+    })
+  })
+}
 </script>
 <script src="./js/dark.js"></script>
