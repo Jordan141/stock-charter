@@ -19,3 +19,9 @@
 *   Once you've finished implementing these user stories, click the "I've completed this challenge" button and enter the URLs for both your GitHub repository and your live app running on Heroku.
 
 *   You can get feedback on your project by sharing it with your friends on Facebook.
+
+* TO DO LIST
+- [ ] Remove console.logs
+- [ ] Fix caption removing in jQuery
+- [ ] Redraw chart on new data
+- [ ] Fix undefined values on yAxis 

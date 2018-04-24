@@ -13,8 +13,6 @@ const ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK = 'new_s
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(express.static(__dirname + '/public'))
 
-console.log(API_KEY)
-
 let stocks = ['GE', 'AAPL']
 
 app.get('/', (req, res) => {
@@ -29,14 +27,6 @@ app.post('/', (req, res) => {
     .then(results => res.send(results))
 })
 
-function errorCatch(data){
-    if(data.hasOwnProperty('quandl_error')){
-        return INVALID_STOCK
-    }
-
-    return data
-}
-
 function notifyUsers(socket, tag, data){
     socket.emit(tag, data)
     socket.broadcast.emit(tag, data)
@@ -44,11 +34,9 @@ function notifyUsers(socket, tag, data){
 
 io.on('connection', socket => {
     socket.on('join', function(data) {
-        console.log('Join:', data);
         socket.emit(NEW_STOCK, stocks);
     });
     socket.on(ADD_STOCK, function(data){
-        console.log(ADD_STOCK, data)
         if(data){
             console.log(ADD_STOCK, 'Accepted', data)
             stocks.push(data)
@@ -59,9 +47,7 @@ io.on('connection', socket => {
         }
     })
     socket.on(REMOVE_STOCK, function(data){
-        console.log(REMOVE_STOCK, data)
         if(data && stocks.includes(data)){
-            console.log(REMOVE_STOCK, 'Accepted', data)
             stocks.splice(stocks.indexOf(data), 1)
             console.log(REMOVE_STOCK,"stocks", stocks)
             notifyUsers(socket, NEW_STOCK, stocks)
