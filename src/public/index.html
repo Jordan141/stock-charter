@@ -37,7 +37,7 @@
 </html>
 <script>
 var ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK ='new_stock', INVALID_STOCK = 'invalid_stock'
-var seriesOptions = [], seriesCounter = 0;
+var seriesOptions = [], seriesCounter = 0, jsonData = [];
 var stocks = [], myCards = [];
 var socket = io();
 
@@ -70,6 +70,14 @@ function removeStock(e){
   $(h3.parentElement).remove()
   socket.emit(REMOVE_STOCK, text)
 }
+function findInfo(id){
+  if(jsonData.length === 0){
+    console.error("JSON not loaded yet")
+  }
+  var elementPos = jsonData.map(x => x.symbol).indexOf(id.toUpperCase());
+  console.log(jsonData[elementPos].info)
+  return jsonData[elementPos].info
+}
 
 function updateStocks(newStock = []){
   stocks = newStock 
@@ -80,11 +88,9 @@ function updateStocks(newStock = []){
       if(respData === INVALID_STOCK){
         return console.log('Quandl Error', 'Invalid stockname')
       }
-      var newData = [], info;
-      data = respData[0].dataset_data
-      console.log('data', data)
-      info = respData[1].dataset
-      console.log('info', info)
+      var newData = [];
+      data = respData.dataset_data
+
       data.data.forEach(point => {
         newData.push([new Date(point[0]).getTime(), point[1]]);
       })
@@ -99,9 +105,9 @@ function updateStocks(newStock = []){
       seriesCounter += 1;
 
       if (seriesCounter === stocks.length) {
-        createChart();
-        myCards.forEach(e => $(e).remove())
-        myCards = stocks.map(e => createStockElement(e, info.name))
+        myChart = createChart();
+        myCards.forEach(e => $(e.parentElement).remove())
+        myCards = stocks.map(e => createStockElement(e, findInfo(e)))
         myCards.forEach(e => $('.stocks-container').append(e))
         console.log(myCards)
       }
@@ -110,7 +116,7 @@ function updateStocks(newStock = []){
 }
 
 function createChart() {
-  Highcharts.stockChart('container', {
+  return Highcharts.stockChart('container', {
     rangeSelector: {
       selected: 4
     },
@@ -137,15 +143,15 @@ function createChart() {
   });
 }
 
-window.onload = () => {
-  $.getJSON('./js/companylist.json', data => {
+window.onload = async () => {
+  await $.getJSON('./js/companylist.json', data => {
     console.log('json success')
     console.log('JSONDATA', data)
+    jsonData = data
     var dataList = $("#symbolList");
     $.each(data, (i, x) => {
-      var symbol = x.Symbol
+      var symbol = x.symbol
       var opt = $("<option></option>").attr("value", symbol);
-      if(i % 100 === 0) console.log(symbol)
       dataList.append(opt)
     })
   })

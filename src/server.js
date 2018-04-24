@@ -1,11 +1,13 @@
 const express = require('express')
 const PORT = process.env.PORT || 8080
+//@ts-ignore
 const API_KEY = process.env.API_KEY || require('./config.json').API_KEY
 const fetch = require('node-fetch')
 const bodyParser = require('body-parser')
 const app = express()
 const server = require('http').createServer(app)
 const io = require('socket.io').listen(server)
+const errorCodes = require('./errorCodes')
 const ADD_STOCK = 'add_stock', REMOVE_STOCK = 'remove_stock', NEW_STOCK = 'new_stock', INVALID_STOCK = 'invalid_stock'
 
 app.use(bodyParser.urlencoded({extended: true}))
@@ -21,14 +23,10 @@ app.get('/', (req, res) => {
 
 app.post('/', (req, res) => {
     const id = req.body.id
-    const urls = [`https://www.quandl.com/api/v3/datasets/WIKI/${id}/data.json?api_key=${API_KEY}`,
-    `https://www.quandl.com/api/v3/datasets/WIKI/${id}/metadata.json?api_key=${API_KEY}`
-    ]
-
-    const promises = urls.map(url => fetch(url).then(y => y.json()))
-    Promise.all(promises).then(results => {
-        res.send(results)
-    });
+    const url = `https://www.quandl.com/api/v3/datasets/WIKI/${id}/data.json?api_key=${API_KEY}`
+    //@ts-ignore
+    fetch(url).then(y => y.json())
+    .then(results => res.send(results))
 })
 
 function errorCatch(data){
@@ -51,7 +49,7 @@ io.on('connection', socket => {
     });
     socket.on(ADD_STOCK, function(data){
         console.log(ADD_STOCK, data)
-        if(validateSymbol(data)){
+        if(data){
             console.log(ADD_STOCK, 'Accepted', data)
             stocks.push(data)
             notifyUsers(socket, NEW_STOCK, stocks)
@@ -62,10 +60,11 @@ io.on('connection', socket => {
     })
     socket.on(REMOVE_STOCK, function(data){
         console.log(REMOVE_STOCK, data)
-        if(validateSymbol(data) && stocks.includes(data)){
+        if(data && stocks.includes(data)){
             console.log(REMOVE_STOCK, 'Accepted', data)
             stocks.splice(stocks.indexOf(data), 1)
-            notifyUsers(socket, NEW_STOCK, data)
+            console.log(REMOVE_STOCK,"stocks", stocks)
+            notifyUsers(socket, NEW_STOCK, stocks)
         } else {
             console.log(INVALID_STOCK, data)
             socket.emit(INVALID_STOCK, data)
